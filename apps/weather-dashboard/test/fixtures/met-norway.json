@@ -1,0 +1,50 @@
+{
+  "type": "Feature",
+  "geometry": { "type": "Point", "coordinates": [-0.1278, 51.5074, 12] },
+  "properties": {
+    "meta": {
+      "updated_at": "2026-08-27T08:12:41Z",
+      "units": { "air_temperature": "celsius", "wind_speed": "m/s" }
+    },
+    "timeseries": [
+      {
+        "time": "2026-08-27T09:00:00Z",
+        "data": {
+          "instant": {
+            "details": {
+              "air_pressure_at_sea_level": 1011.5,
+              "air_temperature": 16.1,
+              "cloud_area_fraction": 30.5,
+              "relative_humidity": 66.4,
+              "wind_from_direction": 231.2,
+              "wind_speed": 4.0
+            }
+          },
+          "next_1_hours": {
+            "summary": { "symbol_code": "partlycloudy_day" },
+            "details": { "precipitation_amount": 0.0 }
+          }
+        }
+      },
+      {
+        "time": "2026-08-27T15:00:00Z",
+        "data": {
+          "instant": {
+            "details": {
+              "air_pressure_at_sea_level": 1008.1,
+              "air_temperature": 18.4,
+              "cloud_area_fraction": 92.0,
+              "relative_humidity": 81.0,
+              "wind_from_direction": 250.0,
+              "wind_speed": 6.2
+            }
+          },
+          "next_6_hours": {
+            "summary": { "symbol_code": "heavyrainandthunder" },
+            "details": { "precipitation_amount": 6.0 }
+          }
+        }
+      }
+    ]
+  }
+}

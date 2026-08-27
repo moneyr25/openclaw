@@ -1,0 +1,46 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.12, 51.5, 11.0] },
+      "properties": {
+        "location": { "name": "London" },
+        "requestPointDistance": 812.4,
+        "modelRunDate": "2026-08-27T06:00Z",
+        "timeSeries": [
+          {
+            "time": "2026-08-27T09:00Z",
+            "screenTemperature": 16.7,
+            "feelsLikeTemperature": 15.4,
+            "windSpeed10m": 4.12,
+            "windDirectionFrom10m": 233,
+            "windGustSpeed10m": 7.7,
+            "visibility": 22000,
+            "screenRelativeHumidity": 65.2,
+            "mslp": 101120,
+            "uvIndex": 3,
+            "significantWeatherCode": 3,
+            "precipitationRate": 0.0,
+            "probOfPrecipitation": 4
+          },
+          {
+            "time": "2026-08-27T10:00Z",
+            "screenTemperature": 17.3,
+            "feelsLikeTemperature": 16.0,
+            "windSpeed10m": 5.5,
+            "windDirectionFrom10m": 246,
+            "windGustSpeed10m": 9.4,
+            "visibility": 11000,
+            "screenRelativeHumidity": 79.0,
+            "mslp": 100980,
+            "uvIndex": 2,
+            "significantWeatherCode": 15,
+            "precipitationRate": 0.7,
+            "probOfPrecipitation": 55
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Weather consensus</title>
+    <meta
+      name="description"
+      content="An aggregated UK weather forecast built from the Met Office, ECMWF, ICON, GFS and others, with an explicit measure of how much they agree."
+    />
+    <link rel="stylesheet" href="/styles.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%E2%9B%85%3C/text%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar__location">
+        <h1 id="place">Locating…</h1>
+        <p id="precision" class="muted"></p>
+      </div>
+      <div class="topbar__actions">
+        <form id="search-form" role="search" autocomplete="off">
+          <input
+            id="search-input"
+            type="search"
+            placeholder="Town or postcode"
+            aria-label="Search for a place"
+            minlength="2"
+          />
+          <button type="submit">Go</button>
+        </form>
+        <button id="locate" type="button" title="Use my precise location">
+          Use my location
+        </button>
+        <button id="units" type="button" title="Switch units">°C</button>
+      </div>
+    </header>
+
+    <div id="search-results" class="search-results" hidden></div>
+    <div id="banner" class="banner" hidden></div>
+    <section id="warnings" class="warnings" hidden aria-label="Weather warnings"></section>
+
+    <main id="main" hidden>
+      <section class="now card" aria-label="Current conditions">
+        <div class="now__primary">
+          <div id="now-icon" class="now__icon" aria-hidden="true"></div>
+          <div>
+            <p id="now-temp" class="now__temp"></p>
+            <p id="now-condition" class="now__condition"></p>
+            <p id="now-feels" class="muted"></p>
+          </div>
+        </div>
+        <dl class="now__stats" id="now-stats"></dl>
+        <div class="now__confidence">
+          <div class="confidence-row">
+            <span class="confidence-row__label">Model agreement</span>
+            <span id="now-confidence-value" class="confidence-row__value"></span>
+          </div>
+          <div class="meter"><div id="now-confidence-bar" class="meter__fill"></div></div>
+          <p id="now-range" class="muted small"></p>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="hourly-heading">
+        <div class="card__head">
+          <h2 id="hourly-heading">Next 24 hours</h2>
+          <p class="muted small">Bar height is rain chance; colour depth is model agreement.</p>
+        </div>
+        <div id="hourly" class="hourly" role="list"></div>
+      </section>
+
+      <section class="card" aria-labelledby="daily-heading">
+        <div class="card__head">
+          <h2 id="daily-heading">Week ahead</h2>
+          <p class="muted small">The bar spans the day's low to high; the pale band is the models' spread.</p>
+        </div>
+        <div id="daily" class="daily"></div>
+      </section>
+
+      <section class="card" aria-labelledby="sources-heading">
+        <div class="card__head">
+          <h2 id="sources-heading">Where this comes from</h2>
+          <p class="muted small">
+            Temperature each source predicts for
+            <select id="source-hour" aria-label="Hour to compare sources for"></select>
+          </p>
+        </div>
+        <div class="table-scroll">
+          <table class="sources">
+            <thead>
+              <tr>
+                <th scope="col">Source</th>
+                <th scope="col">Model family</th>
+                <th scope="col">Grid</th>
+                <th scope="col">Temp</th>
+                <th scope="col">vs consensus</th>
+                <th scope="col">Rain</th>
+              </tr>
+            </thead>
+            <tbody id="sources-body"></tbody>
+          </table>
+        </div>
+        <div id="source-status" class="source-status"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p id="attribution" class="muted small"></p>
+      <p class="muted small">
+        Consensus weighting favours the Met Office UKV in the short range and ECMWF further
+        out, and never counts two feeds of the same model as two opinions.
+      </p>
+      <p id="generated" class="muted small"></p>
+    </footer>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

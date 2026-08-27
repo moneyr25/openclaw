@@ -1,0 +1,61 @@
+[
+  {
+    "DateTime": "2026-08-27T10:00:00+01:00",
+    "EpochDateTime": 1787734800,
+    "WeatherIcon": 4,
+    "IconPhrase": "Intermittent clouds",
+    "HasPrecipitation": false,
+    "IsDaylight": true,
+    "Temperature": { "Value": 16.6, "Unit": "C", "UnitType": 17 },
+    "RealFeelTemperature": { "Value": 15.9, "Unit": "C", "UnitType": 17 },
+    "Wind": {
+      "Speed": { "Value": 14.8, "Unit": "km/h", "UnitType": 7 },
+      "Direction": { "Degrees": 233, "Localized": "SW", "English": "SW" }
+    },
+    "WindGust": { "Speed": { "Value": 27.8, "Unit": "km/h", "UnitType": 7 } },
+    "RelativeHumidity": 64,
+    "Visibility": { "Value": 22.5, "Unit": "km", "UnitType": 6 },
+    "UVIndex": 3,
+    "UVIndexText": "Moderate",
+    "CloudCover": 42,
+    "PrecipitationProbability": 6,
+    "TotalLiquid": { "Value": 0.0, "Unit": "mm", "UnitType": 3 },
+    "Rain": { "Value": 0.0, "Unit": "mm", "UnitType": 3 }
+  },
+  {
+    "DateTime": "2026-08-27T11:00:00+01:00",
+    "EpochDateTime": 1787738400,
+    "WeatherIcon": 18,
+    "IconPhrase": "Rain",
+    "HasPrecipitation": true,
+    "PrecipitationType": "Rain",
+    "PrecipitationIntensity": "Heavy",
+    "IsDaylight": true,
+    "Temperature": { "Value": 17.1, "Unit": "C", "UnitType": 17 },
+    "RealFeelTemperature": { "Value": 16.2, "Unit": "C", "UnitType": 17 },
+    "Wind": {
+      "Speed": { "Value": 19.6, "Unit": "km/h", "UnitType": 7 },
+      "Direction": { "Degrees": 248, "Localized": "WSW", "English": "WSW" }
+    },
+    "WindGust": { "Speed": { "Value": 34.2, "Unit": "km/h", "UnitType": 7 } },
+    "RelativeHumidity": 82,
+    "Visibility": { "Value": 6.4, "Unit": "km", "UnitType": 6 },
+    "UVIndex": 1,
+    "CloudCover": 93,
+    "PrecipitationProbability": 71,
+    "TotalLiquid": { "Value": 3.4, "Unit": "mm", "UnitType": 3 },
+    "Rain": { "Value": 3.4, "Unit": "mm", "UnitType": 3 }
+  },
+  {
+    "DateTime": "2026-08-27T12:00:00+01:00",
+    "EpochDateTime": 1787742000,
+    "WeatherIcon": 12,
+    "IconPhrase": "Showers",
+    "HasPrecipitation": true,
+    "IsDaylight": true,
+    "Temperature": { "Value": 17.4, "Unit": "C", "UnitType": 17 },
+    "RelativeHumidity": 76,
+    "PrecipitationProbability": 40,
+    "TotalLiquid": { "Value": 0.1, "Unit": "mm", "UnitType": 3 }
+  }
+]

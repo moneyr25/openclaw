@@ -1,0 +1,16 @@
+{
+  "name": "@openclaw/weather-dashboard",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Multi-source UK weather aggregation dashboard (Met Office + global NWP consensus)",
+  "type": "module",
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "scripts": {
+    "start": "node --experimental-strip-types --disable-warning=ExperimentalWarning src/server.ts",
+    "dev": "node --experimental-strip-types --disable-warning=ExperimentalWarning --watch src/server.ts",
+    "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test test/*.test.ts",
+    "verify": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify.ts"
+  }
+}

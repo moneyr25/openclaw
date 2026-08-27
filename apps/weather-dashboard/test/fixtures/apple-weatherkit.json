@@ -1,0 +1,55 @@
+{
+  "forecastHourly": {
+    "name": "HourlyForecast",
+    "metadata": {
+      "attributionURL": "https://weatherkit.apple.com/legal-attribution.html",
+      "expireTime": "2026-08-27T10:30:00Z",
+      "latitude": 51.507,
+      "longitude": -0.128,
+      "readTime": "2026-08-27T09:12:00Z",
+      "units": "m",
+      "version": 1
+    },
+    "hours": [
+      {
+        "forecastStart": "2026-08-27T09:00:00Z",
+        "cloudCover": 0.42,
+        "conditionCode": "PartlyCloudy",
+        "daylight": true,
+        "humidity": 0.65,
+        "precipitationAmount": 0,
+        "precipitationChance": 0.05,
+        "precipitationType": "clear",
+        "pressure": 1011.4,
+        "pressureTrend": "steady",
+        "snowfallIntensity": 0,
+        "temperature": 16.3,
+        "temperatureApparent": 15.7,
+        "temperatureDewPoint": 9.8,
+        "uvIndex": 3,
+        "visibility": 23000,
+        "windDirection": 234,
+        "windGust": 27.1,
+        "windSpeed": 14.6
+      },
+      {
+        "forecastStart": "2026-08-27T10:00:00Z",
+        "cloudCover": 0.94,
+        "conditionCode": "HeavyRain",
+        "daylight": true,
+        "humidity": 0.83,
+        "precipitationAmount": 3.1,
+        "precipitationChance": 0.75,
+        "precipitationType": "rain",
+        "pressure": 1009.2,
+        "temperature": 17,
+        "temperatureApparent": 16.1,
+        "uvIndex": 1,
+        "visibility": 6500,
+        "windDirection": 249,
+        "windGust": 33.9,
+        "windSpeed": 19.2
+      }
+    ]
+  }
+}
