@@ -8,7 +8,11 @@ import {
   weightedMean,
   weightedMedian,
 } from "../src/stats.ts";
-import { computeWeights, familySkill } from "../src/skill.ts";
+import {
+  computeWeights,
+  effectiveSampleSize,
+  familySkill,
+} from "../src/skill.ts";
 import { aggregate, confidenceFrom, densify } from "../src/aggregate.ts";
 import { solarTimes } from "../src/astro.ts";
 import type {
@@ -137,6 +141,43 @@ describe("skill weighting", () => {
     // doubling.
     assert.ok(pairedTotal > singleTotal);
     assert.ok(pairedTotal <= singleTotal * 1.2 + 1e-9);
+  });
+
+  test("effective sample size collapses identical members to one", () => {
+    assert.equal(effectiveSampleSize(2, 1), 1);
+    assert.equal(effectiveSampleSize(4, 0), 4);
+    assert.ok(effectiveSampleSize(2, 0.95) < 1.05);
+  });
+
+  test("partly independent members earn more than identical ones", () => {
+    // AccuWeather and Apple are genuinely different forecast systems; two feeds
+    // of the same Met Office run are not.
+    const proprietary = computeWeights(
+      [descriptor("accu", "proprietary", 11), descriptor("apple", "proprietary", 10)],
+      3,
+    );
+    const ukmoPair = computeWeights(
+      [descriptor("a", "ukmo", 2), descriptor("b", "ukmo", 2)],
+      3,
+    );
+
+    const total = (weights: Map<string, number>) =>
+      [...weights.values()].reduce((sum, weight) => sum + weight, 0);
+
+    const proprietaryGain = total(proprietary) / familySkill("proprietary", 3);
+    const ukmoGain = total(ukmoPair) / familySkill("ukmo", 3);
+
+    assert.ok(
+      proprietaryGain > ukmoGain,
+      `proprietary gain ${proprietaryGain} should exceed ukmo gain ${ukmoGain}`,
+    );
+    // Still nothing close to a doubling.
+    assert.ok(proprietaryGain < 1.25);
+  });
+
+  test("proprietary forecasters outrank thin commercial wrappers", () => {
+    assert.ok(familySkill("proprietary", 3) > familySkill("blend", 3));
+    assert.ok(familySkill("proprietary", 3) < familySkill("ukmo", 3));
   });
 
   test("the sharper model takes the larger share within a family", () => {
@@ -306,6 +347,39 @@ describe("aggregation", () => {
     ]);
     // "Rain" versus "heavy rain" is agreement about the thing that matters.
     assert.ok(split.hours[0]!.condition!.confidence > 90);
+  });
+
+  test("commercial forecasters cannot outvote the raw models", () => {
+    // Four commercial products all saying 20, against three raw models saying
+    // 10. The raw models must still carry the answer.
+    const result = run([
+      series(descriptor("ukmo", "ukmo", 2), [{ tempC: 10 }]),
+      series(descriptor("ecmwf", "ecmwf", 25), [{ tempC: 10 }]),
+      series(descriptor("icon", "icon", 7), [{ tempC: 10 }]),
+      series(descriptor("accu", "proprietary", 11), [{ tempC: 20 }]),
+      series(descriptor("apple", "proprietary", 10), [{ tempC: 20 }]),
+      series(descriptor("owm", "blend", 11), [{ tempC: 20 }]),
+      series(descriptor("wapi", "blend", 12), [{ tempC: 20 }]),
+    ]);
+    const value = result.hours[0]?.values.tempC?.value ?? 0;
+    assert.ok(value < 15, `consensus ${value} should sit below the midpoint`);
+  });
+
+  test("a proprietary forecaster still moves the answer", () => {
+    const without = run([
+      series(descriptor("ukmo", "ukmo", 2), [{ tempC: 10 }]),
+      series(descriptor("ecmwf", "ecmwf", 25), [{ tempC: 10 }]),
+    ]);
+    const with_ = run([
+      series(descriptor("ukmo", "ukmo", 2), [{ tempC: 10 }]),
+      series(descriptor("ecmwf", "ecmwf", 25), [{ tempC: 10 }]),
+      series(descriptor("accu", "proprietary", 11), [{ tempC: 16 }]),
+    ]);
+    const shift =
+      (with_.hours[0]?.values.tempC?.value ?? 0) -
+      (without.hours[0]?.values.tempC?.value ?? 0);
+    // Included and audible, not merely decorative.
+    assert.ok(shift > 0.8, `AccuWeather only moved the consensus by ${shift}`);
   });
 
   test("a source is not used beyond its own forecast range", () => {

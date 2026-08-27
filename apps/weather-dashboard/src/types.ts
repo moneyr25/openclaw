@@ -83,6 +83,7 @@ export type ModelFamily =
   | "gfs"
   | "arpege"
   | "gem"
+  | "proprietary"
   | "blend";
 
 export type SourceDescriptor = {

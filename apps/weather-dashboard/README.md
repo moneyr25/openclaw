@@ -26,6 +26,8 @@ npm start                 # http://127.0.0.1:8787
 | NOAA GFS (via Open-Meteo) | `gfs` | 13 km | no |
 | Météo-France ARPEGE/AROME (via Open-Meteo) | `arpege` | 10 km | no |
 | Environment Canada GEM (via Open-Meteo) | `gem` | 15 km | no |
+| AccuWeather | `proprietary` | 11 km | yes |
+| Apple Weather (WeatherKit) | `proprietary` | 10 km | yes |
 | OpenWeatherMap | `blend` | 11 km | yes |
 | WeatherAPI.com | `blend` | 12 km | yes |
 | Met Office severe weather warnings (RSS) | — | — | no |
@@ -56,9 +58,23 @@ most multi-source dashboards have. MET Norway, the ECMWF feed and most
 commercial APIs are all reading the same ECMWF run. Averaging them naively
 lets one model outvote several genuinely independent ones — and, worse, makes
 their agreement look like confirmation when it is the same forecast counted
-three times. Weight is therefore allocated **per model family** and then split
-between that family's members. A family with several feeds earns a small
-sampling bonus (up to 20%), never a multiple.
+three times.
+
+Weight is therefore allocated **per model family** and then split between that
+family's members, with the family's bonus scaled by how independent those
+members actually are. Each family declares a correlation coefficient and the
+weighting uses the standard effective-sample-size result, `n / (1 + ρ(n−1))`:
+two feeds of the same Met Office run (ρ = 0.95) count as barely more than one
+opinion, while AccuWeather and Apple (ρ = 0.6) — genuinely different forecast
+systems — count as noticeably more. Never as a multiple.
+
+This is also why AccuWeather and Apple sit in a `proprietary` family rather
+than getting one each. They carry real skill the raw models do not: their own
+bias correction, statistical post-processing, and in AccuWeather's case human
+forecaster intervention. But they are still *downstream* of the same models
+already in this set, so their agreement with each other is not independent
+evidence. They are weighted above the thin commercial wrappers and below the
+raw models they derive from.
 
 **4. Robust combination, not a plain average.** Continuous variables use a
 weighted median as an anchor, discard samples more than two deviations from
@@ -102,6 +118,25 @@ Every key is optional; see `.env.example`. The two worth adding:
   <https://datahub.metoffice.gov.uk/>.
 - **`MET_NORWAY_CONTACT`** — an email or URL. MET Norway's terms require a
   real contact in the `User-Agent` and answer anonymous requests with 403.
+
+**AccuWeather** needs one key from <https://developer.accuweather.com/>. The
+free plan allows 50 calls a day and serves 12 hours ahead, so it sharpens the
+short range rather than the week. Coordinates must first be resolved to a
+location key; that key never changes, so it is cached in process and a refresh
+costs a single call. `ACCUWEATHER_HOURLY_RANGE` unlocks longer tiers on a paid
+plan and is validated at startup, because asking for a tier your key cannot
+reach returns a 401 that reads exactly like a bad key.
+
+**Apple WeatherKit** needs four values rather than one, because it authenticates
+with a signed token instead of an API key: a Team ID, a Services ID, a Key ID
+and the `.p8` private key (see `.env.example` for where each lives in the
+developer portal). It requires a paid Apple Developer account. Two details in
+the token are easy to get wrong and both fail as an opaque 401 — the JWT header
+needs a non-standard `id` claim of `TEAM_ID.SERVICE_ID`, and the ES256
+signature must be JOSE's raw `r||s` pair rather than the DER encoding Node
+emits by default. Both are handled in `src/sources/apple-weatherkit.ts` and
+covered by tests. Supplying only some of the four is treated as a mistake and
+fails loudly at startup, rather than silently running one source short.
 
 ## Verifying it against the real APIs
 
@@ -150,6 +185,11 @@ served with `stale: true`.
   the measured error. `src/skill.ts` is the single place that would change.
 - **Warnings are scraped from RSS**, the one surface here with no API contract.
   It is fail-soft and the URL is configurable via `MET_OFFICE_WARNINGS_URL`.
+- **BBC Weather is not included.** It is the other app most UK users mean, and
+  its data (DTN, formerly MeteoGroup) would be a genuinely independent addition
+  — but it has no public API, only an undocumented internal endpoint. Adding a
+  parser written blind against it would be guesswork; capturing one real
+  response is enough to write it properly.
 - **This app sits outside the pnpm workspace on purpose.** It has no
   dependencies, adds nothing to the root package, ships in no build, and runs
   its tests with `node --test` rather than the repo's Vitest lanes. It is a

@@ -9,8 +9,14 @@ import { __testing as metOffice } from "../src/sources/met-office.ts";
 import { __testing as metNorway } from "../src/sources/met-norway.ts";
 import { __testing as openWeather } from "../src/sources/openweathermap.ts";
 import { __testing as weatherApi } from "../src/sources/weatherapi.ts";
+import { __testing as accuWeather } from "../src/sources/accuweather.ts";
+import {
+  __testing as appleWeatherKit,
+  createWeatherKitToken,
+} from "../src/sources/apple-weatherkit.ts";
 import { parseWarningsFeed } from "../src/sources/warnings.ts";
 import { asArray, path as at } from "../src/parse.ts";
+import { generateKeyPairSync, createVerify } from "node:crypto";
 
 const FIXTURES = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -191,5 +197,132 @@ describe("met office warnings feed", () => {
 
   test("returns nothing for an empty feed rather than throwing", () => {
     assert.deepEqual(parseWarningsFeed("<rss><channel/></rss>"), []);
+  });
+});
+
+describe("accuweather", () => {
+  const hours = accuWeather.parseHourly(fixture("accuweather") as unknown[]);
+
+  test("reads metric values without converting", () => {
+    assert.equal(hours[0]?.tempC, 16.6);
+    assert.equal(hours[0]?.windKph, 14.8);
+    assert.equal(hours[0]?.gustKph, 27.8);
+    assert.equal(hours[0]?.visibilityKm, 22.5);
+  });
+
+  test("reads nested Wind.Direction.Degrees", () => {
+    assert.equal(hours[0]?.windDirDeg, 233);
+    assert.equal(hours[1]?.windDirDeg, 248);
+  });
+
+  test("reads TotalLiquid as the hourly accumulation", () => {
+    assert.equal(hours[0]?.precipMm, 0);
+    assert.equal(hours[1]?.precipMm, 3.4);
+  });
+
+  test("upgrades rain to heavy rain from the rainfall rate", () => {
+    // AccuWeather has no heavy-rain icon: 18 is plain "Rain" either way, so the
+    // 3.4 mm is what separates a downpour from a shower.
+    assert.equal(hours[1]?.condition, "heavy-rain");
+  });
+
+  test("downgrades a trace of rain to drizzle", () => {
+    assert.equal(hours[2]?.condition, "drizzle");
+  });
+
+  test("tolerates hours missing the optional detail fields", () => {
+    assert.equal(hours[2]?.tempC, 17.4);
+    assert.equal(hours[2]?.windKph, undefined);
+    assert.equal(hours[2]?.uvIndex, undefined);
+  });
+
+  test("maps icons that need no intensity adjustment", () => {
+    assert.equal(hours[0]?.condition, "partly-cloudy");
+  });
+});
+
+describe("apple weatherkit", () => {
+  const hours = appleWeatherKit.parseHours(
+    asArray(at(fixture("apple-weatherkit"), "forecastHourly.hours")),
+  );
+
+  test("converts 0-1 fractions to percentages", () => {
+    assert.equal(hours[0]?.humidityPct, 65);
+    assert.equal(hours[0]?.cloudPct, 42);
+    assert.equal(hours[0]?.precipProbPct, 5);
+    assert.equal(hours[1]?.precipProbPct, 75);
+  });
+
+  test("reads metric wind and pressure as given", () => {
+    assert.equal(hours[0]?.windKph, 14.6);
+    assert.equal(hours[0]?.gustKph, 27.1);
+    assert.equal(hours[0]?.pressureHpa, 1011.4);
+  });
+
+  test("converts visibility from metres to km", () => {
+    assert.equal(hours[0]?.visibilityKm, 23);
+    assert.equal(hours[1]?.visibilityKm, 6.5);
+  });
+
+  test("maps condition codes", () => {
+    assert.equal(hours[0]?.condition, "partly-cloudy");
+    assert.equal(hours[1]?.condition, "heavy-rain");
+  });
+
+  test("uses forecastStart as the hour timestamp", () => {
+    assert.equal(hours[0]?.time, "2026-08-27T09:00:00.000Z");
+  });
+});
+
+describe("apple weatherkit authentication", () => {
+  const { privateKey, publicKey } = generateKeyPairSync("ec", {
+    namedCurve: "P-256",
+  });
+  const pem = privateKey.export({ type: "pkcs8", format: "pem" }) as string;
+
+  const token = createWeatherKitToken(
+    {
+      teamId: "ABCDE12345",
+      serviceId: "com.example.weather",
+      keyId: "KEY1234567",
+      privateKey: pem,
+      userAgent: "test",
+    },
+    1_787_734_800,
+  );
+
+  const [headerPart, payloadPart, signaturePart] = token.split(".");
+  const decode = (part: string): Record<string, unknown> =>
+    JSON.parse(Buffer.from(part, "base64url").toString()) as Record<string, unknown>;
+
+  test("carries the id claim WeatherKit matches on", () => {
+    // Not part of the JWT spec, and its absence fails as an opaque 401.
+    assert.equal(decode(headerPart!)["id"], "ABCDE12345.com.example.weather");
+    assert.equal(decode(headerPart!)["kid"], "KEY1234567");
+    assert.equal(decode(headerPart!)["alg"], "ES256");
+  });
+
+  test("issues and subjects the token correctly", () => {
+    const payload = decode(payloadPart!);
+    assert.equal(payload["iss"], "ABCDE12345");
+    assert.equal(payload["sub"], "com.example.weather");
+    assert.equal(payload["iat"], 1_787_734_800);
+    assert.ok((payload["exp"] as number) > (payload["iat"] as number));
+  });
+
+  test("signs in JOSE r||s form, not DER", () => {
+    const signature = Buffer.from(signaturePart!, "base64url");
+    // DER-encoded ECDSA is variable length and starts 0x30; JOSE requires
+    // exactly 64 bytes for P-256.
+    assert.equal(signature.length, 64);
+    assert.ok(
+      createVerify("SHA256")
+        .update(`${headerPart}.${payloadPart}`)
+        .verify({ key: publicKey, dsaEncoding: "ieee-p1363" }, signature),
+    );
+  });
+
+  test("is url-safe with no padding", () => {
+    assert.doesNotMatch(token, /[+/=]/u);
   });
 });

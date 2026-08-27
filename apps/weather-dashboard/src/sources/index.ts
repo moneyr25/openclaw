@@ -6,6 +6,11 @@ import {
   OPENWEATHERMAP_DESCRIPTOR,
 } from "./openweathermap.ts";
 import { createWeatherApiSource, WEATHERAPI_DESCRIPTOR } from "./weatherapi.ts";
+import { createAccuWeatherSource, ACCUWEATHER_DESCRIPTOR } from "./accuweather.ts";
+import {
+  createAppleWeatherKitSource,
+  APPLE_WEATHERKIT_DESCRIPTOR,
+} from "./apple-weatherkit.ts";
 import type { AppConfig } from "../config.ts";
 import type {
   Coordinates,
@@ -106,6 +111,8 @@ const OPEN_METEO_MODELS: Array<{
 /** Sources that need a key, listed so the UI can explain what is missing. */
 export const OPTIONAL_DESCRIPTORS: SourceDescriptor[] = [
   MET_OFFICE_DESCRIPTOR,
+  ACCUWEATHER_DESCRIPTOR,
+  APPLE_WEATHERKIT_DESCRIPTOR,
   OPENWEATHERMAP_DESCRIPTOR,
   WEATHERAPI_DESCRIPTOR,
 ];
@@ -132,6 +139,23 @@ export const buildSources = (config: AppConfig): WeatherSource[] => {
   if (config.weatherApiKey) {
     sources.push(createWeatherApiSource({ apiKey: config.weatherApiKey }));
   }
+  if (config.accuWeatherApiKey) {
+    sources.push(
+      createAccuWeatherSource({
+        apiKey: config.accuWeatherApiKey,
+        hourlyRange: config.accuWeatherHourlyRange,
+        userAgent: config.userAgent,
+      }),
+    );
+  }
+  if (config.appleWeatherKit) {
+    sources.push(
+      createAppleWeatherKitSource({
+        ...config.appleWeatherKit,
+        userAgent: config.userAgent,
+      }),
+    );
+  }
 
   return sources;
 };
@@ -150,6 +174,8 @@ export const skippedSources = (
   if (config.metOfficeApiKey) configured.add(MET_OFFICE_DESCRIPTOR.id);
   if (config.openWeatherMapApiKey) configured.add(OPENWEATHERMAP_DESCRIPTOR.id);
   if (config.weatherApiKey) configured.add(WEATHERAPI_DESCRIPTOR.id);
+  if (config.accuWeatherApiKey) configured.add(ACCUWEATHER_DESCRIPTOR.id);
+  if (config.appleWeatherKit) configured.add(APPLE_WEATHERKIT_DESCRIPTOR.id);
 
   return OPTIONAL_DESCRIPTORS.filter(
     (descriptor) => !configured.has(descriptor.id),

@@ -65,6 +65,16 @@ const DEMO_SOURCES: Array<{
     bias: -0.8,
     wetness: 1.1,
   },
+  {
+    descriptor: { id: "accuweather", label: "AccuWeather", attribution: "AccuWeather", family: "proprietary", resolutionKm: 11, maxLeadHours: 12 },
+    bias: 0.5,
+    wetness: 0.9,
+  },
+  {
+    descriptor: { id: "apple-weatherkit", label: "Apple Weather (WeatherKit)", attribution: "Apple Weather", family: "proprietary", resolutionKm: 10, maxLeadHours: 168 },
+    bias: -0.15,
+    wetness: 0.95,
+  },
 ];
 
 const conditionFor = (cloud: number, precip: number): Condition => {
@@ -137,8 +147,10 @@ const buildDemoSources = (): WeatherSource[] =>
       Awaited<ReturnType<WeatherSource["fetch"]>>
     > => {
       const hours = buildSeries(index * 97, entry.bias, entry.wetness);
+      const publishesProbability =
+        index < 2 || entry.descriptor.family === "proprietary";
       const withProbability =
-        index < 2
+        publishesProbability
           ? hours.map((hour) => ({
               ...hour,
               precipProbPct: Math.min(

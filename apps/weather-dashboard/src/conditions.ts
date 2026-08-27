@@ -169,6 +169,135 @@ export const weatherApiCodeToCondition = (code: number): Condition => {
 };
 
 /**
+ * AccuWeather numeric weather icons (1-44).
+ *
+ * Day and night variants collapse together — we render our own day/night icons
+ * from the sun position. AccuWeather has no distinct "heavy rain" icon, so the
+ * adapter upgrades `rain` using the forecast rainfall rate instead.
+ */
+export const accuWeatherIconToCondition = (icon: number): Condition => {
+  switch (icon) {
+    case 1:
+    case 2:
+    case 30:
+    case 31:
+    case 33:
+    case 34:
+      return "clear";
+    case 3:
+    case 4:
+    case 5:
+    case 32:
+    case 35:
+    case 36:
+    case 37:
+      return "partly-cloudy";
+    case 6:
+    case 7:
+    case 8:
+    case 38:
+      return "cloudy";
+    case 11:
+      return "fog";
+    case 12:
+    case 13:
+    case 14:
+    case 18:
+    case 39:
+    case 40:
+      return "rain";
+    case 15:
+    case 16:
+    case 17:
+    case 41:
+    case 42:
+      return "thunder";
+    case 19:
+    case 20:
+    case 21:
+    case 22:
+    case 23:
+    case 43:
+    case 44:
+      return "snow";
+    case 24:
+      return "hail";
+    case 25:
+    case 26:
+    case 29:
+      return "sleet";
+    default:
+      return "cloudy";
+  }
+};
+
+/**
+ * Apple WeatherKit `conditionCode` strings.
+ *
+ * WeatherKit's vocabulary separates intensity ("Rain" vs "HeavyRain") and
+ * coverage ("ScatteredShowers"), both of which flatten into our taxonomy.
+ */
+export const appleConditionToCondition = (code: string): Condition => {
+  switch (code) {
+    case "Clear":
+    case "MostlyClear":
+    case "Hot":
+    case "Frigid":
+      return "clear";
+    case "PartlyCloudy":
+    case "MostlyCloudy":
+    case "Breezy":
+    case "Windy":
+      return "partly-cloudy";
+    case "Cloudy":
+      return "cloudy";
+    case "Fog":
+    case "Haze":
+    case "Smoke":
+    case "Dust":
+      return "fog";
+    case "Drizzle":
+    case "FreezingDrizzle":
+      return "drizzle";
+    case "Rain":
+    case "Showers":
+    case "ScatteredShowers":
+    case "MixedRainfall":
+      return "rain";
+    case "HeavyRain":
+    case "TropicalStorm":
+    case "Hurricane":
+      return "heavy-rain";
+    case "Sleet":
+    case "MixedRainAndSleet":
+    case "MixedRainAndSnow":
+    case "MixedSnowAndSleet":
+    case "FreezingRain":
+      return "sleet";
+    case "Flurries":
+    case "Snow":
+    case "SnowShowers":
+    case "ScatteredSnowShowers":
+    case "HeavySnow":
+    case "Blizzard":
+    case "BlowingSnow":
+      return "snow";
+    case "Hail":
+      return "hail";
+    case "Thunderstorms":
+    case "SevereThunderstorm":
+    case "IsolatedThunderstorms":
+    case "ScatteredThunderstorms":
+    case "StrongStorms":
+      return "thunder";
+    default:
+      // WeatherKit adds condition codes over time; an unknown one should read
+      // as "unremarkable", not as a made-up severe outcome.
+      return "cloudy";
+  }
+};
+
+/**
  * Severity ranking. Two jobs, which is why the exact order matters:
  *
  *  - Breaking consensus ties towards the more consequential outcome. A 50/50
