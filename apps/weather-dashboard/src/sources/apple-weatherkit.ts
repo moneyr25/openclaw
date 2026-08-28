@@ -1,4 +1,3 @@
-import { createSign } from "node:crypto";
 import { buildUrl, fetchJson, UpstreamError } from "../http.ts";
 import { asArray, isRecord, numberAt, path, stringAt } from "../parse.ts";
 import { appleConditionToCondition } from "../conditions.ts";
@@ -44,32 +43,72 @@ export type AppleWeatherKitOptions = {
   userAgent: string;
 };
 
-const base64url = (input: Buffer | string): string =>
-  (typeof input === "string" ? Buffer.from(input) : input)
-    .toString("base64")
+const base64url = (input: ArrayBuffer | Uint8Array | string): string => {
+  const bytes =
+    typeof input === "string"
+      ? new TextEncoder().encode(input)
+      : input instanceof Uint8Array
+        ? input
+        : new Uint8Array(input);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary)
     .replaceAll("+", "-")
     .replaceAll("/", "_")
     .replaceAll("=", "");
+};
+
+/** Strip the PEM armour and decode the base64 body to PKCS#8 DER. */
+const pemToPkcs8 = (pem: string): Uint8Array => {
+  const body = pem
+    .replace(/-----BEGIN [^-]+-----/u, "")
+    .replace(/-----END [^-]+-----/u, "")
+    .replace(/\s+/gu, "");
+  const binary = atob(body);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
+};
 
 /** Tokens are valid for an hour; refresh well before that. */
 const TOKEN_LIFETIME_SECONDS = 3600;
 const TOKEN_REFRESH_MARGIN_SECONDS = 300;
 
 let cachedToken: { token: string; expiresAt: number } | undefined;
+let cachedSigningKey: { pem: string; key: CryptoKey } | undefined;
+
+const importSigningKey = async (pem: string): Promise<CryptoKey> => {
+  if (cachedSigningKey?.pem === pem) return cachedSigningKey.key;
+  const key = await crypto.subtle.importKey(
+    "pkcs8",
+    pemToPkcs8(pem),
+    { name: "ECDSA", namedCurve: "P-256" },
+    false,
+    ["sign"],
+  );
+  cachedSigningKey = { pem, key };
+  return key;
+};
 
 /**
  * Build the WeatherKit bearer token.
  *
+ * Signed with WebCrypto rather than `node:crypto` so the identical code runs
+ * under Node and on Cloudflare Workers. That is not just portability: WebCrypto
+ * ECDSA already emits the raw r||s pair JOSE requires, whereas Node's default
+ * DER encoding has to be opted out of.
+ *
  * Two details are easy to get wrong and both fail as an opaque 401:
  *  - the JWT header carries an extra `id` claim of `TEAM_ID.SERVICE_ID`, which
  *    is not part of the JWT spec but is what WeatherKit matches against;
- *  - ES256 signatures must be JOSE's raw r||s pair, not the DER encoding
- *    Node produces by default, hence `dsaEncoding: "ieee-p1363"`.
+ *  - the signature must cover the exact `header.payload` string that is sent.
  */
-export const createWeatherKitToken = (
+export const createWeatherKitToken = async (
   options: AppleWeatherKitOptions,
   nowSeconds = Math.floor(Date.now() / 1000),
-): string => {
+): Promise<string> => {
   const header = {
     alg: "ES256",
     typ: "JWT",
@@ -87,19 +126,21 @@ export const createWeatherKitToken = (
     JSON.stringify(payload),
   )}`;
 
-  const signature = createSign("SHA256")
-    .update(signingInput)
-    .sign({ key: options.privateKey, dsaEncoding: "ieee-p1363" });
+  const signature = await crypto.subtle.sign(
+    { name: "ECDSA", hash: "SHA-256" },
+    await importSigningKey(options.privateKey),
+    new TextEncoder().encode(signingInput),
+  );
 
   return `${signingInput}.${base64url(signature)}`;
 };
 
-const tokenFor = (options: AppleWeatherKitOptions): string => {
+const tokenFor = async (options: AppleWeatherKitOptions): Promise<string> => {
   const now = Math.floor(Date.now() / 1000);
   if (cachedToken && cachedToken.expiresAt - TOKEN_REFRESH_MARGIN_SECONDS > now) {
     return cachedToken.token;
   }
-  const token = createWeatherKitToken(options, now);
+  const token = await createWeatherKitToken(options, now);
   cachedToken = { token, expiresAt: now + TOKEN_LIFETIME_SECONDS };
   return token;
 };
@@ -181,7 +222,7 @@ export const createAppleWeatherKitSource = (options: AppleWeatherKitOptions) => 
     const json = await fetchJson<unknown>(url, {
       signal,
       headers: {
-        authorization: `Bearer ${tokenFor(options)}`,
+        authorization: `Bearer ${await tokenFor(options)}`,
         "user-agent": options.userAgent,
       },
     });
@@ -214,5 +255,6 @@ export const __testing = {
   base64url,
   resetTokenCache: () => {
     cachedToken = undefined;
+    cachedSigningKey = undefined;
   },
 };

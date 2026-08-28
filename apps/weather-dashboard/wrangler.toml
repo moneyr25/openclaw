@@ -1,0 +1,22 @@
+name = "weather-consensus"
+main = "worker/index.ts"
+compatibility_date = "2026-08-01"
+
+# Static Assets: files under public/ are served straight from Cloudflare's edge
+# and never invoke the Worker, so the dashboard shell costs no request quota.
+# Anything unmatched (i.e. /api/*) falls through to the Worker.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[observability]
+enabled = true
+
+# Non-secret settings. API keys are NOT set here — use `wrangler secret put`,
+# which stores them encrypted rather than in version control.
+[vars]
+FORECAST_CACHE_TTL = "600"
+ACCUWEATHER_HOURLY_RANGE = "12hour"
+# MET Norway's terms require a real contact address in the User-Agent.
+# Replace this before deploying, or that source will return 403.
+MET_NORWAY_CONTACT = "you@example.com"

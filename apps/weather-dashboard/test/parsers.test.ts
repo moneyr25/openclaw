@@ -274,13 +274,14 @@ describe("apple weatherkit", () => {
   });
 });
 
-describe("apple weatherkit authentication", () => {
+describe("apple weatherkit authentication", async () => {
   const { privateKey, publicKey } = generateKeyPairSync("ec", {
     namedCurve: "P-256",
   });
   const pem = privateKey.export({ type: "pkcs8", format: "pem" }) as string;
 
-  const token = createWeatherKitToken(
+  // Signed via WebCrypto so the same path runs under Node and on Workers.
+  const token = await createWeatherKitToken(
     {
       teamId: "ABCDE12345",
       serviceId: "com.example.weather",

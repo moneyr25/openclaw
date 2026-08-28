@@ -10,7 +10,12 @@
   "scripts": {
     "start": "node --experimental-strip-types --disable-warning=ExperimentalWarning src/server.ts",
     "dev": "node --experimental-strip-types --disable-warning=ExperimentalWarning --watch src/server.ts",
+    "demo": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/demo.ts",
     "test": "node --experimental-strip-types --disable-warning=ExperimentalWarning --test test/*.test.ts",
-    "verify": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify.ts"
+    "verify": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/verify.ts",
+    "check:worker": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/check-worker.ts",
+    "dev:worker": "npx -y wrangler@4 dev",
+    "deploy": "npx -y wrangler@4 deploy",
+    "secret": "npx -y wrangler@4 secret put"
   }
 }

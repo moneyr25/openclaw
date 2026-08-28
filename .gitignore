@@ -35,6 +35,10 @@ apps/android/.cxx/
 apps/android/.kotlin/
 apps/android/benchmark/results/
 
+# Cloudflare Workers (apps/weather-dashboard)
+.dev.vars
+**/.wrangler/
+
 # Bun build artifacts
 *.bun-build
 apps/macos/.build/

@@ -1,0 +1,14 @@
+# Local secrets for `wrangler dev`. Copy to `.dev.vars` (git-ignored).
+# For the deployed Worker use `wrangler secret put NAME` instead — never [vars].
+
+MET_OFFICE_API_KEY=
+ACCUWEATHER_API_KEY=
+OPENWEATHERMAP_API_KEY=
+WEATHERAPI_KEY=
+
+APPLE_WEATHERKIT_TEAM_ID=
+APPLE_WEATHERKIT_SERVICE_ID=
+APPLE_WEATHERKIT_KEY_ID=
+# Paste the .p8 contents. Newlines may be written as \n on a single line.
+# There is no file system on Workers, so the _PATH variant is not available.
+APPLE_WEATHERKIT_PRIVATE_KEY=

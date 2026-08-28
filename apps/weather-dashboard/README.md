@@ -6,13 +6,18 @@ consensus answer **and how much the models actually agree** — because a
 forecast that six models agree on and a forecast they are arguing about should
 not look the same on screen.
 
-Zero runtime dependencies. Node 22.6+ only.
+Zero runtime dependencies — it runs on Node 22.6+ or on Cloudflare Workers from
+the same source.
+
+**Locally:**
 
 ```bash
 cd apps/weather-dashboard
 cp .env.example .env      # optional — it runs with no keys at all
 npm start                 # http://127.0.0.1:8787
 ```
+
+**Deployed, to get a URL your phone can use:** see [Deploying](#deploying).
 
 ## What it aggregates
 
@@ -152,15 +157,79 @@ It calls every configured source for real and prints which variables parsed,
 how many hours came back, and the exact mismatch when something has moved.
 Run it after any upstream model upgrade.
 
+## Deploying
+
+The app runs on Cloudflare Workers with no code changes and no build step —
+`src/app.ts` is already a Web-standard `Request -> Response` handler, which is
+what the Workers runtime wants. Node gets a thin `node:http` bridge; Workers
+calls it directly. One implementation, so the two cannot drift.
+
+```bash
+cd apps/weather-dashboard
+npm run deploy            # npx wrangler deploy — prompts a browser login
+```
+
+That prints a URL like `https://weather-consensus.<your-subdomain>.workers.dev`.
+It is HTTPS, so precise geolocation works on a phone. The free plan covers
+100,000 requests a day, and files under `public/` are served straight from
+Cloudflare's edge without invoking the Worker at all, so only `/api/*` counts
+against that.
+
+Before the first deploy, edit `MET_NORWAY_CONTACT` in `wrangler.toml` to a real
+address — MET Norway's terms require one and answer anonymous requests with 403.
+
+API keys go in as encrypted secrets, never in `wrangler.toml`:
+
+```bash
+npm run secret MET_OFFICE_API_KEY
+npm run secret ACCUWEATHER_API_KEY
+npm run secret APPLE_WEATHERKIT_PRIVATE_KEY   # paste the .p8 contents
+```
+
+To run the Workers runtime locally, copy `.dev.vars.example` to `.dev.vars`
+(git-ignored) and run `npm run dev:worker`.
+
+### Keeping the Worker build clean
+
+The Worker and the Node server share almost all their code, so it is easy to
+add an import to a shared module that quietly pulls in `node:fs` — which fails
+at deploy time or, worse, on the first request.
+
+```bash
+npm run check:worker
+```
+
+walks the import graph from `worker/index.ts` and fails if it reaches a `node:`
+builtin or any bare specifier. It caught exactly that on its first run. Node-only
+code is confined to `src/server.ts` and `src/config.ts`; configuration is
+otherwise built by the pure `src/config-core.ts`, from `process.env` on Node and
+from the bindings object on Workers.
+
+The WeatherKit token is signed with WebCrypto rather than `node:crypto` for the
+same reason — and it turns out to be the better API anyway, since WebCrypto's
+ECDSA already emits the raw `r||s` pair JOSE requires.
+
+### Notes on the Workers deployment
+
+- **Caching is per isolate.** A warm isolate answers repeat requests without
+  touching an upstream; an evicted one starts cold and re-fetches. That is fine
+  for a personal dashboard, but if you are on AccuWeather's free tier (50 calls
+  a day) and open the page constantly, put the Cache API or a KV namespace in
+  front of `/api/forecast`.
+- **No file system**, so `APPLE_WEATHERKIT_PRIVATE_KEY_PATH` is rejected there
+  with an error saying to use the inline key. Everything else works identically.
+
 ## Development
 
 ```bash
-npm test          # unit tests, no network
-npm run dev       # auto-restarting server
-node --experimental-strip-types scripts/demo.ts   # synthetic data, no API calls
+npm test            # unit tests, no network
+npm run dev         # auto-restarting Node server
+npm run dev:worker  # the real Workers runtime, locally
+npm run demo        # synthetic data, no API calls
+npm run check:worker
 ```
 
-`scripts/demo.ts` runs the real server and the real fusion engine against
+`npm run demo` runs the real server and the real fusion engine against
 deterministic synthetic model output, so the UI can be developed and reviewed
 without burning free-tier quota.
 

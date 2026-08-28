@@ -11,7 +11,7 @@ import {
   createAppleWeatherKitSource,
   APPLE_WEATHERKIT_DESCRIPTOR,
 } from "./apple-weatherkit.ts";
-import type { AppConfig } from "../config.ts";
+import type { AppConfig } from "../config-core.ts";
 import type {
   Coordinates,
   SourceDescriptor,
